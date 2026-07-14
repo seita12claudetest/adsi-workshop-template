@@ -1,3 +1,4 @@
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface ApiError {
@@ -31,7 +32,7 @@ export async function apiClient<T>(
     (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${BASE_PATH}${API_BASE_URL}${path}`, {
     ...options,
     headers,
   });

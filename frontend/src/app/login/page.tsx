@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (err instanceof ApiClientError) {
         setError(err.body.message);
       } else {
-        setError("通信エラーが発生しました");
+        setError(`通信エラー: ${err instanceof Error ? err.message : String(err)}`);
       }
     } finally {
       setLoading(false);
