@@ -14,6 +14,9 @@ import com.example.attendance.common.enums.*;
 import com.example.attendance.common.exception.BusinessException;
 import com.example.attendance.employee.entity.Employee;
 import com.example.attendance.employee.repository.EmployeeRepository;
+import com.example.attendance.leave.service.LeaveBalanceService;
+import com.example.attendance.organization.repository.SectionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +51,12 @@ class ApplicationServiceImplTest {
     private EmployeeRepository employeeRepository;
     @Mock
     private DailyAttendanceRepository dailyAttendanceRepository;
+    @Mock
+    private LeaveBalanceService leaveBalanceService;
+    @Mock
+    private SectionRepository sectionRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private ApplicationServiceImpl service;
 
@@ -59,7 +68,10 @@ class ApplicationServiceImplTest {
                 overtimeApplicationRepository,
                 timeCorrectionApplicationRepository,
                 employeeRepository,
-                dailyAttendanceRepository
+                dailyAttendanceRepository,
+                leaveBalanceService,
+                sectionRepository,
+                eventPublisher
         );
     }
 
@@ -70,6 +82,7 @@ class ApplicationServiceImplTest {
                 "ANNUAL", LocalDate.of(2026, 7, 20), LocalDate.of(2026, 7, 20), null, "私用のため");
         var employee = Employee.builder().id(1L).name("田中太郎").build();
         when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+        when(leaveBalanceService.hasEnoughBalance(any(), any())).thenReturn(true);
         when(applicationRepository.save(any())).thenAnswer(inv -> {
             Application a = inv.getArgument(0);
             a.setId(1L);

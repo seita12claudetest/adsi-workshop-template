@@ -1,6 +1,7 @@
 package com.example.attendance.application.service;
 
 import com.example.attendance.application.entity.Application;
+import com.example.attendance.application.entity.LeaveApplication;
 import com.example.attendance.application.entity.TimeCorrectionApplication;
 import com.example.attendance.application.repository.*;
 import com.example.attendance.attendance.entity.DailyAttendance;
@@ -9,8 +10,10 @@ import com.example.attendance.common.enums.*;
 import com.example.attendance.common.exception.BusinessException;
 import com.example.attendance.employee.entity.Employee;
 import com.example.attendance.employee.repository.EmployeeRepository;
+import com.example.attendance.leave.service.LeaveBalanceService;
 import com.example.attendance.organization.entity.Section;
 import com.example.attendance.organization.repository.SectionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,8 @@ class ApprovalServiceImplTest {
     @Mock
     private ApprovalRepository approvalRepository;
     @Mock
+    private LeaveApplicationRepository leaveApplicationRepository;
+    @Mock
     private TimeCorrectionApplicationRepository timeCorrectionApplicationRepository;
     @Mock
     private DailyAttendanceRepository dailyAttendanceRepository;
@@ -44,6 +49,10 @@ class ApprovalServiceImplTest {
     private EmployeeRepository employeeRepository;
     @Mock
     private SectionRepository sectionRepository;
+    @Mock
+    private LeaveBalanceService leaveBalanceService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private ApprovalServiceImpl service;
 
@@ -52,10 +61,13 @@ class ApprovalServiceImplTest {
         service = new ApprovalServiceImpl(
                 applicationRepository,
                 approvalRepository,
+                leaveApplicationRepository,
                 timeCorrectionApplicationRepository,
                 dailyAttendanceRepository,
                 employeeRepository,
-                sectionRepository
+                sectionRepository,
+                leaveBalanceService,
+                eventPublisher
         );
     }
 
@@ -69,17 +81,23 @@ class ApprovalServiceImplTest {
         var approver = Employee.builder().id(5L).sectionId(100L).role(Role.MANAGER).build();
         var section = Section.builder().id(100L).managerId(5L).build();
 
+        var leaveApp = LeaveApplication.builder()
+                .applicationId(1L).leaveType(LeaveType.ANNUAL)
+                .startDate(LocalDate.of(2026, 7, 20)).endDate(LocalDate.of(2026, 7, 20)).build();
+
         when(applicationRepository.findById(1L)).thenReturn(Optional.of(application));
         when(employeeRepository.findById(10L)).thenReturn(Optional.of(applicant));
         when(employeeRepository.findById(5L)).thenReturn(Optional.of(approver));
         when(sectionRepository.findById(100L)).thenReturn(Optional.of(section));
         when(approvalRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(leaveApplicationRepository.findByApplicationId(1L)).thenReturn(Optional.of(leaveApp));
 
         var result = service.approve(1L, 5L, "承認します");
 
         assertThat(result.action()).isEqualTo(ApprovalAction.APPROVED);
         assertThat(application.getStatus()).isEqualTo(ApplicationStatus.APPROVED);
+        verify(leaveBalanceService).consume(eq(10L), any());
     }
 
     @Test
