@@ -12,10 +12,17 @@ import com.example.attendance.common.exception.BusinessException;
 import com.example.attendance.common.exception.ResourceNotFoundException;
 import com.example.attendance.employee.entity.Employee;
 import com.example.attendance.employee.repository.EmployeeRepository;
+import com.example.attendance.leave.service.LeaveBalanceService;
+import com.example.attendance.notification.event.NotificationEvent;
+import com.example.attendance.organization.entity.Section;
+import com.example.attendance.organization.repository.SectionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Slf4j
@@ -29,6 +36,9 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final TimeCorrectionApplicationRepository timeCorrectionApplicationRepository;
     private final EmployeeRepository employeeRepository;
     private final DailyAttendanceRepository dailyAttendanceRepository;
+    private final LeaveBalanceService leaveBalanceService;
+    private final SectionRepository sectionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ApplicationServiceImpl(
             ApplicationRepository applicationRepository,
@@ -36,13 +46,19 @@ public class ApplicationServiceImpl implements ApplicationService {
             OvertimeApplicationRepository overtimeApplicationRepository,
             TimeCorrectionApplicationRepository timeCorrectionApplicationRepository,
             EmployeeRepository employeeRepository,
-            DailyAttendanceRepository dailyAttendanceRepository) {
+            DailyAttendanceRepository dailyAttendanceRepository,
+            LeaveBalanceService leaveBalanceService,
+            SectionRepository sectionRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.applicationRepository = applicationRepository;
         this.leaveApplicationRepository = leaveApplicationRepository;
         this.overtimeApplicationRepository = overtimeApplicationRepository;
         this.timeCorrectionApplicationRepository = timeCorrectionApplicationRepository;
         this.employeeRepository = employeeRepository;
         this.dailyAttendanceRepository = dailyAttendanceRepository;
+        this.leaveBalanceService = leaveBalanceService;
+        this.sectionRepository = sectionRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -52,6 +68,20 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         if (request.endDate().isBefore(request.startDate())) {
             throw new BusinessException("終了日は開始日以降を指定してください");
+        }
+
+        if (leaveType == LeaveType.ANNUAL || leaveType == LeaveType.HALF_AM || leaveType == LeaveType.HALF_PM) {
+            BigDecimal requiredDays;
+            if (leaveType == LeaveType.HALF_AM || leaveType == LeaveType.HALF_PM) {
+                requiredDays = BigDecimal.valueOf(0.5);
+            } else {
+                requiredDays = BigDecimal.valueOf(
+                    ChronoUnit.DAYS.between(request.startDate(), request.endDate()) + 1
+                );
+            }
+            if (!leaveBalanceService.hasEnoughBalance(applicantId, requiredDays)) {
+                throw new BusinessException("有給残日数が不足しています");
+            }
         }
 
         var application = applicationRepository.save(Application.builder()
@@ -69,6 +99,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .hours(request.hours())
                 .build());
 
+        publishApprovalRequestNotification(application, employee);
         return toResponse(application, employee, leaveApp);
     }
 
@@ -91,6 +122,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .overtimeType(overtimeType)
                 .build());
 
+        publishApprovalRequestNotification(application, employee);
         return toResponse(application, employee, overtimeApp);
     }
 
@@ -117,6 +149,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .correctedClockOut(request.correctedClockOut())
                 .build());
 
+        publishApprovalRequestNotification(application, employee);
         return toResponse(application, employee, timeCorrectionApp);
     }
 
@@ -151,6 +184,18 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         applicationRepository.delete(application);
+    }
+
+    private void publishApprovalRequestNotification(Application application, Employee applicant) {
+        sectionRepository.findById(applicant.getSectionId()).ifPresent(section -> {
+            if (section.getManagerId() != null) {
+                eventPublisher.publishEvent(NotificationEvent.approvalRequest(
+                        section.getManagerId(),
+                        application.getId(),
+                        applicant.getName(),
+                        application.getType().name()));
+            }
+        });
     }
 
     private Employee findEmployee(Long employeeId) {
