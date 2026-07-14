@@ -6,10 +6,7 @@ import { getEmployee, isAuthenticated, logout } from "@/lib/auth";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [employee, setEmployee] = useState<{
-    name: string;
-    role: string;
-  } | null>(null);
+  const [employee] = useState(() => getEmployee());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState<string | null>(null);
@@ -17,9 +14,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace("/login");
-      return;
     }
-    setEmployee(getEmployee());
   }, [router]);
 
   useEffect(() => {
