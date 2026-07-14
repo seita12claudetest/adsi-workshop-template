@@ -19,6 +19,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/applications/leave", label: "休暇申請", roles: ["EMPLOYEE", "MANAGER", "ADMIN"] },
   { href: "/applications/overtime", label: "残業申請", roles: ["EMPLOYEE", "MANAGER", "ADMIN"] },
   { href: "/applications/time-correction", label: "打刻修正", roles: ["EMPLOYEE", "MANAGER", "ADMIN"] },
+  { href: "/leave-balance", label: "有給残高", roles: ["EMPLOYEE", "MANAGER", "ADMIN"] },
+  { href: "/notifications", label: "通知", roles: ["EMPLOYEE", "MANAGER", "ADMIN"] },
   { href: "/approvals", label: "承認一覧", roles: ["MANAGER", "ADMIN"] },
   { href: "/admin/employees", label: "社員管理", roles: ["ADMIN"] },
   { href: "/admin/organizations", label: "組織管理", roles: ["ADMIN"] },

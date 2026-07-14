@@ -94,3 +94,44 @@ export interface Office {
   longitude: number;
   radiusMeters: number;
 }
+
+export interface LeaveBalanceResponse {
+  id: number;
+  fiscalYear: number;
+  grantedDays: number;
+  usedDays: number;
+  remainingDays: number;
+  grantDate: string;
+  expiryDate: string;
+}
+
+export interface LeaveBalanceSummaryResponse {
+  employeeId: number;
+  totalRemainingDays: number;
+  balances: LeaveBalanceResponse[];
+}
+
+export type NotificationType = "CLOCK_REMINDER" | "APPROVAL_REQUEST" | "APPROVAL_RESULT" | "LEAVE_BALANCE_ALERT";
+
+export interface NotificationResponse {
+  id: number;
+  recipientId: number;
+  type: NotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  relatedApplicationId: number | null;
+}
+
+export interface UnreadCountResponse {
+  count: number;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
