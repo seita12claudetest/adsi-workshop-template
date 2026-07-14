@@ -13,6 +13,7 @@ import com.example.attendance.employee.repository.EmployeeRepository;
 import com.example.attendance.leave.service.LeaveBalanceService;
 import com.example.attendance.organization.entity.Section;
 import com.example.attendance.organization.repository.SectionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,8 @@ class ApprovalServiceImplTest {
     private SectionRepository sectionRepository;
     @Mock
     private LeaveBalanceService leaveBalanceService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private ApprovalServiceImpl service;
 
@@ -63,7 +66,8 @@ class ApprovalServiceImplTest {
                 dailyAttendanceRepository,
                 employeeRepository,
                 sectionRepository,
-                leaveBalanceService
+                leaveBalanceService,
+                eventPublisher
         );
     }
 

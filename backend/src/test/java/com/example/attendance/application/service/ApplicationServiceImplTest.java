@@ -15,6 +15,8 @@ import com.example.attendance.common.exception.BusinessException;
 import com.example.attendance.employee.entity.Employee;
 import com.example.attendance.employee.repository.EmployeeRepository;
 import com.example.attendance.leave.service.LeaveBalanceService;
+import com.example.attendance.organization.repository.SectionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,10 @@ class ApplicationServiceImplTest {
     private DailyAttendanceRepository dailyAttendanceRepository;
     @Mock
     private LeaveBalanceService leaveBalanceService;
+    @Mock
+    private SectionRepository sectionRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private ApplicationServiceImpl service;
 
@@ -63,7 +69,9 @@ class ApplicationServiceImplTest {
                 timeCorrectionApplicationRepository,
                 employeeRepository,
                 dailyAttendanceRepository,
-                leaveBalanceService
+                leaveBalanceService,
+                sectionRepository,
+                eventPublisher
         );
     }
 

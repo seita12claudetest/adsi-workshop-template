@@ -6,6 +6,7 @@ import com.example.attendance.employee.repository.EmployeeRepository;
 import com.example.attendance.leave.dto.ConsumeResult;
 import com.example.attendance.leave.entity.LeaveBalance;
 import com.example.attendance.leave.repository.LeaveBalanceRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,11 +38,13 @@ class LeaveBalanceServiceTest {
     @Mock
     private EmployeeRepository employeeRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private LeaveGrantCalculator leaveGrantCalculator;
 
     private Clock clock;
 
-    @InjectMocks
     private LeaveBalanceServiceImpl service;
 
     @BeforeEach
@@ -52,7 +55,7 @@ class LeaveBalanceServiceTest {
         );
         leaveGrantCalculator = new LeaveGrantCalculator();
         service = new LeaveBalanceServiceImpl(
-            leaveBalanceRepository, employeeRepository, leaveGrantCalculator, clock
+            leaveBalanceRepository, employeeRepository, leaveGrantCalculator, clock, eventPublisher
         );
     }
 

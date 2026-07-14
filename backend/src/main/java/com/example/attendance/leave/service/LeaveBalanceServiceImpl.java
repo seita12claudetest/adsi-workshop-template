@@ -9,6 +9,8 @@ import com.example.attendance.leave.dto.LeaveBalanceSummaryResponse;
 import com.example.attendance.leave.entity.LeaveBalance;
 import com.example.attendance.leave.repository.LeaveBalanceRepository;
 import com.example.attendance.leave.vo.FiscalYear;
+import com.example.attendance.notification.event.NotificationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,20 +24,25 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class LeaveBalanceServiceImpl implements LeaveBalanceService {
 
+    private static final BigDecimal LEAVE_ALERT_THRESHOLD = new BigDecimal("3");
+
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final EmployeeRepository employeeRepository;
     private final LeaveGrantCalculator leaveGrantCalculator;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     public LeaveBalanceServiceImpl(
             LeaveBalanceRepository leaveBalanceRepository,
             EmployeeRepository employeeRepository,
             LeaveGrantCalculator leaveGrantCalculator,
-            Clock clock) {
+            Clock clock,
+            ApplicationEventPublisher eventPublisher) {
         this.leaveBalanceRepository = leaveBalanceRepository;
         this.employeeRepository = employeeRepository;
         this.leaveGrantCalculator = leaveGrantCalculator;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -91,6 +98,11 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
                 details.add(new ConsumeResult.ConsumeDetail(balance.getFiscalYear(), consumed));
                 remaining = remaining.subtract(consumed);
             }
+        }
+
+        BigDecimal newTotal = total.subtract(days.subtract(remaining));
+        if (newTotal.compareTo(LEAVE_ALERT_THRESHOLD) <= 0) {
+            eventPublisher.publishEvent(NotificationEvent.leaveBalanceAlert(employeeId, newTotal));
         }
 
         return new ConsumeResult(days.subtract(remaining), details);
